@@ -1,0 +1,28 @@
+#!/bin/csh
+set NUM = `printf "%02d" ${argv[1]}`
+if ($argv[1] == -1) then
+  set NUM = "*"
+endif
+#echo $NUM
+
+rm ./dump/all_psum${NUM}_rtl.txt
+rm ./dump/all_psum${NUM}_c.txt
+rm ./dump/all_pool${NUM}_rtl.txt
+rm ./dump/all_pool${NUM}_c.txt
+
+find ./dump   -name "psum${NUM}*" | sort | sed "s/\(.*\)/cat & >> .\/dump\/all_psum${NUM}_rtl.txt/g" |sh
+find ./dump_c -name "psum${NUM}*" | sort | sed "s/\(.*\)/cat & >> .\/dump\/all_psum${NUM}_c.txt/g"   |sh
+find ./dump   -name "pool${NUM}*" | sort | sed "s/\(.*\)/cat & >> .\/dump\/all_pool${NUM}_rtl.txt/g" |sh
+find ./dump_c -name "pool${NUM}*" | sort | sed "s/\(.*\)/cat & >> .\/dump\/all_pool${NUM}_c.txt/g"   |sh
+
+set diff_data = `diff ./dump/all_psum${NUM}_rtl.txt ./dump/all_psum${NUM}_c.txt`
+set diff_flag = `diff ./dump/all_pool${NUM}_rtl.txt ./dump/all_pool${NUM}_c.txt`
+
+if( ( "$diff_data" == "" )&&( "$diff_flag" == "" ) ) then
+        echo "GB_PSUM$NUM    PASS"
+else
+        echo "GB_PSUM$NUM    FAIL"
+endif
+
+
+

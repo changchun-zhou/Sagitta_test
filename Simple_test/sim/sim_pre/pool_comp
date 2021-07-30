@@ -1,0 +1,28 @@
+#!/bin/csh
+set NUM = `printf "%02d" ${argv[1]}`
+if ($argv[1] == -1) then
+  set NUM = "*"
+endif
+#echo $NUM
+
+rm ./dump/pool_data_N${NUM}_rtl.txt
+rm ./dump/pool_data_N${NUM}_c.txt
+rm ./dump/pool_flag_N${NUM}_rtl.txt
+rm ./dump/pool_flag_N${NUM}_c.txt
+
+find ./dump   -name "pool_data_N${NUM}*" | sort | sed "s/\(.*\)/cat & >> .\/dump\/all_pool_data_N${NUM}_rtl.txt/g" |sh
+find ./dump_c -name "pool_data_N${NUM}*" | sort | sed "s/\(.*\)/cat & >> .\/dump\/all_pool_data_N${NUM}_c.txt/g"   |sh
+find ./dump   -name "pool_flag_N${NUM}*" | sort | sed "s/\(.*\)/cat & >> .\/dump\/all_pool_flag_N${NUM}_rtl.txt/g" |sh
+find ./dump_c -name "pool_flag_N${NUM}*" | sort | sed "s/\(.*\)/cat & >> .\/dump\/all_pool_flag_N${NUM}_c.txt/g"   |sh
+
+set diff_data = `diff ./dump/all_pool_data_N${NUM}_rtl.txt ./dump/all_pool_data_N${NUM}_c.txt`
+set diff_flag = `diff ./dump/all_pool_flag_N${NUM}_rtl.txt ./dump/all_pool_flag_N${NUM}_c.txt`
+
+if( ( "$diff_data" == "" )&&( "$diff_flag" == "" ) ) then
+        echo "POOL_OUT$NUM    PASS"
+else
+        echo "POOL_OUT$NUM    FAIL"
+endif
+
+
+
