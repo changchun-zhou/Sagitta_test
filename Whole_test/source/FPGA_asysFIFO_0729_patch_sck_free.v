@@ -2,6 +2,9 @@
 
 `ifndef SIM 
     `define FPGA
+    `define FREQUENCY 5000
+`else 
+    `define FREQUENCY 5
 `endif
 
 `define RD_SIZE_CFG 64 //12B x 256 all layers of NNs
@@ -38,9 +41,7 @@
 `define BASEADDR_ACT        `BASEADDR_FLGACT + 512*`NumBlk_flgact
 `define BASEADDR_OFM        `BASEADDR_ACT + 512*`NumBlk_act
 `define BASEADDR_FLGOFM     `BASEADDR_OFM + 64*4
-module  FPGA_asysFIFO #(
-    parameter FREQUENCY = 5)
-(
+module  FPGA_asysFIFO (
     input                           I_clk_src_p        ,
     input                           I_clk_src_n        ,
     input                           I_rst       , // Not used
@@ -192,18 +193,18 @@ wire trigger_O_reset;
 
 
 wire    clk_src;
-    flutter_free #(
-        .FREQUENCY(FREQUENCY))
-    flutter_free_trigger_SW_clk (
-            .clk    (clk_src),
-            .rst_n  (!I_SW_S),
-            .btn    (I_SW_N),
-            .signal (trigger_SW_clk)
-        );
+    // flutter_free #(
+    //     .FREQUENCY(FREQUENCY))
+    // flutter_free_trigger_SW_clk (
+    //         .clk    (clk_src),
+    //         .rst_n  (!I_SW_S),
+    //         .btn    (I_SW_N),
+    //         .signal (trigger_SW_clk)
+    //     );
 
 
     flutter_free #(
-        .FREQUENCY(FREQUENCY))
+        .FREQUENCY(`FREQUENCY))
     flutter_free_trigger_O_reset (
             .clk    (clk_src),
             .rst_n  (!I_SW_S),
@@ -224,7 +225,7 @@ divider_even #(
         .WIDTH_NUM_DIV(10)
     ) inst_divider_even (
         .clk     (clk_src),
-        .rst_n   (!I_SW_S),
+        .rst_n   (btn_reset_n),
         .num_div (3*{I_SW3, I_SW2, I_SW1, I_SW0} + 4), // fre: 
         .clk_div (clk)
     );
@@ -557,7 +558,7 @@ end
 
     ROM #(
             .DATA_WIDTH(128),
-            .INIT("/workspace/home/zhoucc/Share/Chip_test/Whole_test/scripts/ROM_distribution_modify_simplest.txt"),
+            .INIT("/workspace/home/zhoucc/Share/Chip_test/Whole_test/scripts/ROM_distribution_modify_1bitx2.txt"),
             .ADDR_WIDTH(16),
             .INITIALIZE_FIFO("yes")
         ) inst_ROM (
