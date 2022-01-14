@@ -1,6 +1,10 @@
 `timescale 1ns/1ps
+
 `ifndef SIM 
     `define FPGA
+    `define FREQUENCY 5000
+`else 
+    `define FREQUENCY 5
 `endif
 
 `define RD_SIZE_CFG 64 //12B x 256 all layers of NNs
@@ -37,19 +41,22 @@
 `define BASEADDR_ACT        `BASEADDR_FLGACT + 512*`NumBlk_flgact
 `define BASEADDR_OFM        `BASEADDR_ACT + 512*`NumBlk_act
 `define BASEADDR_FLGOFM     `BASEADDR_OFM + 64*4
-module  FPGA_asysFIFO #(
-    parameter FREQUENCY = 5000)
-(
+module  FPGA_asysFIFO (
     input                           I_clk_src_p        ,
     input                           I_clk_src_n        ,
     input                           I_rst       , // Not used
-    input                           I_SW0            , // SW2: 1-8
-    input                           I_SW1            ,
+
     input                           I_SW_N            ,
     input                           I_SW_C            ,
     input                           I_SW_S             ,
-    input                           I_SW4            ,
+    input                           I_SW0            , // SW0-SW3: sck frequency
+    input                           I_SW1            ,
+    input                           I_SW2            ,
+    input                           I_SW3            ,
+    input                           I_SW4            , // SW4-7: cnt_block
     input                           I_SW5            ,
+    input                           I_SW6            ,
+    input                           I_SW7            ,
     output                          O_FPGA_clk_locked, // GPIO_LED_1_LS
 
     output                          Hold_I_spi_data ,
@@ -119,32 +126,40 @@ wire[128    -1 : 0] blk_mem_dout;
 
 reg rst_n_auto;
 wire btn_reset_n;
-wire btn_rst_n_auto;
-reg [10 -1: 0] cnt_rst_n_auto;
-wire btn_rst_n;
+wire [8     -1 : 0] gpio_in =  {I_SW7, I_SW6, I_SW5, I_SW4, I_SW3, I_SW2, I_SW1, I_SW0};
+wire [8     -1 : 0] gpio_flutter;
+
 //==============================================================================
 // Logic Design :
 //==============================================================================
 
 //==============================================================================
 // Ports
-wire error_config_req;
+wire [20    -1 : 0] loop_num_block;
+assign loop_num_block = 4*gpio_flutter[ 4 +: 4] + 2;
 
-wire [3 -1 : 0]state_rst;
-reg [3 -1 : 0]next_state_rst;
-localparam IDLE_RST = 0, PULLDOWN_SW = 1, PULLDOWN_RST_N = 2, PULLUP_RST_N = 3, PULLUP_SW = 4;  
+wire [4 -1 : 0]state_rst;
+reg [4 -1 : 0]next_state_rst;
+localparam IDLE_RST = 0, PULLDOWN_SW = 1, PULLDOWN_RST_N = 2, PULLUP_RST_N = 3, PULLUP_SW = 4, WAIT0 = 5, WAIT1 =6, WAIT2=7,  
+            WAIT3=8,  WAIT4=9, WAIT5=10;
 always @(*) begin
     next_state_rst = state_rst;
     case (state_rst)
       IDLE_RST    : if ( btn_reset_n )
                   next_state_rst = PULLDOWN_SW;
 
-      PULLDOWN_SW  : next_state_rst = PULLDOWN_RST_N;
+      PULLDOWN_SW  : next_state_rst = WAIT0;
+      WAIT0        : next_state_rst = WAIT1;
+      WAIT1        : next_state_rst = WAIT2;
+      WAIT2        : next_state_rst = WAIT3;
+      WAIT3        : next_state_rst = PULLDOWN_RST_N;
 
-      PULLDOWN_RST_N    : next_state_rst = PULLUP_RST_N;
+      PULLDOWN_RST_N    : next_state_rst =WAIT4;
+      WAIT4        : next_state_rst = WAIT5;
+      WAIT5         : next_state_rst = PULLUP_RST_N;
 
       PULLUP_RST_N : next_state_rst = PULLUP_SW;
-    PULLUP_SW : if ( cnt_block[`IFCODE_WEIADDR] >= 3 | error_config_req)
+    PULLUP_SW : if ( cnt_block[`IFCODE_WEIADDR] >= loop_num_block)
                             next_state_rst = IDLE_RST;
 
       default : next_state_rst = IDLE_RST;
@@ -172,44 +187,51 @@ always @ ( posedge clk or negedge btn_reset_n ) begin
     end
 end
 
+
+
 // Mode Choose
-assign O_bypass         = I_SW0;
-assign O_bypass_fifo    = I_SW1;
+assign O_bypass         = 1;
+assign O_bypass_fifo    = 0;
 
 // Reset/Start
 wire trigger_SW_clk;
 wire trigger_O_reset;
-wire trigger_rst_auto;
-wire [10 -1: 0]cnt_rst_n_auto_5d;
 
+
+wire    clk_src;
+    // flutter_free #(
+    //     .FREQUENCY(FREQUENCY))
+    // flutter_free_trigger_SW_clk (
+    //         .clk    (clk_src),
+    //         .rst_n  (!I_SW_S),
+    //         .btn    (I_SW_N),
+    //         .signal (trigger_SW_clk)
+    //     );
 
 
     flutter_free #(
-        .FREQUENCY(FREQUENCY))
-    flutter_free_trigger_SW_clk (
-            .clk    (clk),
-            .rst_n  (!I_SW_S),
-            .btn    (I_SW_N),
-            .signal (trigger_SW_clk)
-        );
-
-
-    flutter_free #(
-        .FREQUENCY(FREQUENCY))
+        .FREQUENCY(`FREQUENCY))
     flutter_free_trigger_O_reset (
-            .clk    (clk),
+            .clk    (clk_src),
             .rst_n  (!I_SW_S),
             .btn    (I_SW_C),
             .signal (trigger_O_reset)
         );
-    flutter_free #(
-        .FREQUENCY(FREQUENCY))
-    flutter_free_trigger_rst_auto (
-            .clk    (clk),
-            .rst_n  (rst_n),
-            .btn    (I_SW_S),
-            .signal (trigger_rst_auto)
-        );
+
+generate
+    genvar gen_i;
+    for(gen_i=0; gen_i<8; gen_i=gen_i+1) begin
+        flutter_free #(
+            .FREQUENCY(`FREQUENCY))
+        flutter_free_GPIO (
+                .clk    (clk_src),
+                .rst_n  (!I_SW_S),
+                .btn    (gpio_in[gen_i]),
+                .signal (gpio_flutter[gen_i])
+            );
+    end
+endgenerate
+
 `ifdef FPGA
     wire                                    clk_200M;
 `else
@@ -217,15 +239,23 @@ wire [10 -1: 0]cnt_rst_n_auto_5d;
     // assign trigger_SW_clk = I_SW_N;
     // assign trigger_O_reset = I_SW_C;
     // assign trigger_rst_auto = I_SW_S;
-    assign clk = I_clk_src_p;
+    assign clk_src = I_clk_src_p;
 `endif
 
+divider_even #(
+        .WIDTH_NUM_DIV(10)
+    ) inst_divider_even (
+        .clk     (clk_src),
+        .rst_n   (btn_reset_n),
+        .num_div (3*gpio_flutter[0 +: 4] + 4), // fre: 
+        .clk_div (clk)
+    );
+
 assign btn_reset_n        =  ~trigger_O_reset;
-assign btn_rst_n_auto        =  ~trigger_rst_auto;
 
 // PLL Mode Choose
-assign O_SW0            = I_SW4;
-assign O_SW1            = I_SW5;
+assign O_SW0            = 0;
+assign O_SW1            = 0;
 
 // 
 assign O_clk_in         = clk;
@@ -291,8 +321,6 @@ end
 
 assign O_OE_req = ( state == RD_DATA || state_d == RD_DATA ) ? 0 : 1; // ?? enough time for pad convert
 
-wire config_req_d;
-assign error_config_req = (config_req==1 & config_req_d ==0) & state != 0 ;
 // ====================================================================================================================
 // pull down O_spi_cs_n
  reg O_spi_cs_n_;
@@ -320,7 +348,7 @@ always @ ( posedge clk_200M or negedge rst_n ) begin
         cnt_clk_200M <= 0;
 end
 
-assign pullup_ahead_cs_n = cnt_clk_200M >= 2? 3: 0; // hold 20ns
+assign pullup_ahead_cs_n = cnt_clk_200M >= 3? 1: 0; // hold 20ns
 // ====================================================================================================================
 // O_spi_data
 
@@ -397,17 +425,13 @@ end
 integer k;
 always @ ( posedge clk or negedge rst_n ) begin
     if ( !rst_n ) begin
-        patch_cfg_info_pre_rd[0] <= 7; // sck period = 20; clk_chip =14;
-        patch_cfg_info_pre_rd[1] <= 7;
-        patch_cfg_info_pre_rd[2] <= 6;
-        patch_cfg_info_pre_rd[3] <= 3;
-        patch_cfg_info_pre_rd[4] <= 3;
-        for(k=5; k<100; k=k+1)
+        patch_cfg_info_pre_rd[0] <= 6; // sck period = 20; clk_chip =14;
+        patch_cfg_info_pre_rd[1] <= 3;
+        for(k=2; k<100; k=k+1)
             patch_cfg_info_pre_rd[k] <= 3;
 
     end 
 end
-
 
 always @ ( posedge clk or negedge rst_n ) begin
     if ( !rst_n ) begin
@@ -520,6 +544,7 @@ always @ ( posedge clk or negedge btn_reset_n ) begin
     end
 end
 
+
 //==============================================================================
 // FPGA ILA :
 //==============================================================================
@@ -539,26 +564,16 @@ end
     .IB (I_clk_src_n), // 差分时钟负端输入
     .O (clk_ibufg) //时钟缓冲输出
     );
-    wire clk_10M;
+
     clk_wiz clk_wiz
     (
     // Clock out ports
-    .clk_out1(clk_10M), // output clk_out1&nbsp;&nbsp;5MHZ&nbsp;&nbsp;
+    .clk_out1(clk_src), // output clk_out1&nbsp;&nbsp;5MHZ&nbsp;&nbsp;
     .clk_out2(clk_200M),
     // Status and control signals
     .locked(O_FPGA_clk_locked), // output locked
     // Clock in ports
     .clk_in1(clk_ibufg));
-
-    divider_even #(
-        .WIDTH_NUM_DIV(10)
-    ) inst_divider_even_1M (
-        .clk     (clk_10M),
-        .rst_n   (!I_SW_S),
-        .num_div (100),
-        .clk_div (clk)
-    );
-
      
     blk_mem_gen_0 blk_mem_128x2_18 (
       .clka(clk),    // input wire clka
@@ -576,12 +591,13 @@ end
         .probe3({I_config_req,  I_switch_rdwr, O_OE_req, O_spi_cs_n, O_spi_sck}), // input wire [5:0]  probe3 
         .probe4({O_clk_in, O_spi_sck, I_clk_out, I_sck_out, I_LAST_CLOCK_OUT, I_LAST_SCK}), // input wire [5:0]  probe4 
         .probe5(O_OE_req), // input wire [0:0]  probe5 
-        .probe6(patch_flag_pre_rd[9:0]), // input wire [9:0]  probe6 
-        .probe7({patch_cfg_info_rd[0 +: 4], rd_size[0 +: 10], cfg_info, state }), // input wire [30:0]  probe7
+        .probe6(patch_flag_pre_rd), // input wire [9:0]  probe6 
+        .probe7({ rd_size[0 +: 10], cfg_info, state }), // input wire [30:0]  probe7
         .probe8({O_clk_in, O_FPGA_clk_locked, I_DLL_lock, O_SW1, O_SW0, btn_reset_n, O_SW_clk, O_reset_n,O_bypass_fifo, O_bypass}), //16
-        .probe9({blk_mem_dout, total_block[0 +: 8]}), // 128
+        .probe9(blk_mem_dout), // 128
         .probe10({blk_mem_addr, blk_mem_en}), // 32
-        .probe11({cnt_block[`IFCODE_WEIADDR]})// 16
+        .probe11({cnt_block[`IFCODE_WEIADDR]}),// 16
+        .probe12(total_block)
     );
 `else 
     initial begin
@@ -591,7 +607,7 @@ end
 
     ROM #(
             .DATA_WIDTH(128),
-            .INIT("/workspace/home/zhoucc/Share/Chip_test/Whole_test/scripts/test_data_set/1249_74x72/ROM_data/ROM_distribution_modify.txt"),
+            .INIT("/workspace/home/zhoucc/Share/Chip_test/Whole_test/scripts/ROM_distribution_modify.txt"),
             .ADDR_WIDTH(16),
             .INITIALIZE_FIFO("yes")
         ) inst_ROM (
@@ -655,7 +671,7 @@ Delay #(
 
 Delay #(
         .NUM_STAGES(1),
-        .DATA_WIDTH(3)
+        .DATA_WIDTH(4)
     ) inst_Delay_state_rst (
         .CLK     (clk),
         .RESET_N (btn_reset_n),

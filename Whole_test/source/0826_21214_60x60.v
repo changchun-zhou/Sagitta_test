@@ -1,7 +1,5 @@
 `timescale 1ns/1ps
-`ifndef SIM 
-    `define FPGA
-`endif
+`define FPGA
 
 `define RD_SIZE_CFG 64 //12B x 256 all layers of NNs
 `define RD_SIZE_WEIADDR 54 //12B x 256 all layers of NNs
@@ -23,11 +21,11 @@
 `define IFCODE_OFM 2
 `define IFCODE_EMPTY 15
 
-`define NumBlk_weiaddr  2
+`define NumBlk_weiaddr  1
 `define NumBlk_flgwei   1
 `define NumBlk_wei      2
-`define NumBlk_flgact   4
-`define NumBlk_act      9
+`define NumBlk_flgact   1
+`define NumBlk_act      4
 
 `define BASEADDR_CFG        32'h0000_0000
 `define BASEADDR_WEIADDR    `BASEADDR_CFG + 64 
@@ -290,7 +288,6 @@ always @(*) begin
 end
 
 assign O_OE_req = ( state == RD_DATA || state_d == RD_DATA ) ? 0 : 1; // ?? enough time for pad convert
-
 wire config_req_d;
 assign error_config_req = (config_req==1 & config_req_d ==0) & state != 0 ;
 // ====================================================================================================================
@@ -320,7 +317,7 @@ always @ ( posedge clk_200M or negedge rst_n ) begin
         cnt_clk_200M <= 0;
 end
 
-assign pullup_ahead_cs_n = cnt_clk_200M >= 2? 3: 0; // hold 20ns
+assign pullup_ahead_cs_n = cnt_clk_200M >= 3? 1: 0; // hold 20ns
 // ====================================================================================================================
 // O_spi_data
 
@@ -397,9 +394,9 @@ end
 integer k;
 always @ ( posedge clk or negedge rst_n ) begin
     if ( !rst_n ) begin
-        patch_cfg_info_pre_rd[0] <= 7; // sck period = 20; clk_chip =14;
-        patch_cfg_info_pre_rd[1] <= 7;
-        patch_cfg_info_pre_rd[2] <= 6;
+        patch_cfg_info_pre_rd[0] <= 3; // sck period = 20; clk_chip =14;
+        patch_cfg_info_pre_rd[1] <= 3;
+        patch_cfg_info_pre_rd[2] <= 3;
         patch_cfg_info_pre_rd[3] <= 3;
         patch_cfg_info_pre_rd[4] <= 3;
         for(k=5; k<100; k=k+1)
@@ -539,26 +536,16 @@ end
     .IB (I_clk_src_n), // 差分时钟负端输入
     .O (clk_ibufg) //时钟缓冲输出
     );
-    wire clk_10M;
+
     clk_wiz clk_wiz
     (
     // Clock out ports
-    .clk_out1(clk_10M), // output clk_out1&nbsp;&nbsp;5MHZ&nbsp;&nbsp;
+    .clk_out1(clk), // output clk_out1&nbsp;&nbsp;5MHZ&nbsp;&nbsp;
     .clk_out2(clk_200M),
     // Status and control signals
     .locked(O_FPGA_clk_locked), // output locked
     // Clock in ports
     .clk_in1(clk_ibufg));
-
-    divider_even #(
-        .WIDTH_NUM_DIV(10)
-    ) inst_divider_even_1M (
-        .clk     (clk_10M),
-        .rst_n   (!I_SW_S),
-        .num_div (100),
-        .clk_div (clk)
-    );
-
      
     blk_mem_gen_0 blk_mem_128x2_18 (
       .clka(clk),    // input wire clka
@@ -591,7 +578,7 @@ end
 
     ROM #(
             .DATA_WIDTH(128),
-            .INIT("/workspace/home/zhoucc/Share/Chip_test/Whole_test/scripts/test_data_set/1249_74x72/ROM_data/ROM_distribution_modify.txt"),
+            .INIT("/workspace/home/zhoucc/Share/Chip_test/Whole_test/scripts/test_data_set/21214_60x60/ROM_data/ROM_distribution_modify.txt"),
             .ADDR_WIDTH(16),
             .INITIALIZE_FIFO("yes")
         ) inst_ROM (

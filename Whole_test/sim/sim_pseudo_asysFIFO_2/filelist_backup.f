@@ -1,6 +1,5 @@
-/workspace/home/zhoucc/Share/Chip_test/Whole_test/testbench/tb_Sagitta.v 
-/workspace/home/zhoucc/Share/Chip_test/Whole_test/testbench/SUM.v 
-/workspace/home/zhoucc/Share/Chip_test/Whole_test/source/FPGA_asysFIFO_FPGA_0722_distribution_modify_state_rst_addr16.v 
+./tb_Sagitta.v 
+/workspace/home/zhoucc/Share/Chip_test/Whole_test/source/FPGA_asysFIFO_0804_distribution_modify_sck_free.v 
 /workspace/home/zhoucc/Share/Chip_test/Whole_test/source/ROM.v 
 /workspace/home/zhoucc/Share/Chip_test/Whole_test/source/divider_even.v 
 /workspace/home/zhoucc/Share/Chip_test/Simple_test/source/flutter_free.v 
@@ -9,7 +8,7 @@
 /workspace/home/zhoucc/01-Backup/TS3D_tapeout/zhoucc/source/PEB/REGWEI.v 
 /workspace/home/zhoucc/01-Backup/TS3D_tapeout/zhoucc/source/PEB/ARB.v 
 /workspace/home/zhoucc/01-Backup/TS3D_tapeout/zhoucc/source/PEB/MAC.v 
-./PEB.v 
+/workspace/home/zhoucc/01-Backup/TS3D_tapeout/zhoucc/source/PEB/PEB.v 
 /workspace/home/zhoucc/01-Backup/TS3D_tapeout/zhoucc/source/PEB/PSUM.v 
 /workspace/home/zhoucc/01-Backup/TS3D_tapeout/zhoucc/source/PEB/RAM_ACT_wrap.v 
 /workspace/home/zhoucc/01-Backup/TS3D_tapeout/zhoucc/source/PEB/RAM_WEI_wrap.v 

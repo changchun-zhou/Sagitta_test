@@ -1,7 +1,7 @@
 
 `timescale 1ns/1ps
-`define FREQ_SCK 0.1 //MHz
-`define FREQ_CLK 0.1 
+`define FREQ_SCK 200 //MHz
+`define FREQ_CLK 70 
 
 module tb_FPGA (); /* this is automatically generated */
 
@@ -78,14 +78,14 @@ module tb_FPGA (); /* this is automatically generated */
             .I_SW_N            (I_SW2),
             .I_SW_C           (I_SW3),
             .I_SW_S            (I_SW_S),
-            .I_SW0            (1'b1),
+            .I_SW0            (1'b0),
             .I_SW1            (1'b0),
-            // .I_SW2            (1'b1),
-            // .I_SW3            (1'b1),
-            .I_SW4            (1'b0),
+            .I_SW2            (1'b1),
+            .I_SW3            (1'b1),
+            .I_SW4            (1'b1),
             .I_SW5            (1'b0),
-            // .I_SW6            (1'b0),
-            // .I_SW7            (1'b0),
+            .I_SW6            (1'b0),
+            .I_SW7            (1'b0),
             .Hold_I_spi_data  (Hold_I_spi_data),
 
             .O_SW_clk         (O_SW_clk),
@@ -199,10 +199,6 @@ module tb_FPGA (); /* this is automatically generated */
     `ifdef SYNT
         initial $sdf_annotate("./top.sdf",
     ASIC_U,, "sdf.log", "MAXIMUM","1.0:1.0:1.0","FROM_MAXIMUM");
-    `else
-        SUM inst_SUM (.clk(clk_core), .rst_n(O_reset_n));
     `endif
-    
-
 
 endmodule

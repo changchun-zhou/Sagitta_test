@@ -1,7 +1,5 @@
 `timescale 1ns/1ps
-`ifndef SIM 
-    `define FPGA
-`endif
+`define FPGA
 
 `define RD_SIZE_CFG 64 //12B x 256 all layers of NNs
 `define RD_SIZE_WEIADDR 54 //12B x 256 all layers of NNs
@@ -128,7 +126,6 @@ wire btn_rst_n;
 
 //==============================================================================
 // Ports
-wire error_config_req;
 
 wire [3 -1 : 0]state_rst;
 reg [3 -1 : 0]next_state_rst;
@@ -144,7 +141,7 @@ always @(*) begin
       PULLDOWN_RST_N    : next_state_rst = PULLUP_RST_N;
 
       PULLUP_RST_N : next_state_rst = PULLUP_SW;
-    PULLUP_SW : if ( cnt_block[`IFCODE_WEIADDR] >= 3 | error_config_req)
+    PULLUP_SW : if ( cnt_block[`IFCODE_WEIADDR] >= 50)
                             next_state_rst = IDLE_RST;
 
       default : next_state_rst = IDLE_RST;
@@ -291,8 +288,6 @@ end
 
 assign O_OE_req = ( state == RD_DATA || state_d == RD_DATA ) ? 0 : 1; // ?? enough time for pad convert
 
-wire config_req_d;
-assign error_config_req = (config_req==1 & config_req_d ==0) & state != 0 ;
 // ====================================================================================================================
 // pull down O_spi_cs_n
  reg O_spi_cs_n_;
@@ -320,7 +315,7 @@ always @ ( posedge clk_200M or negedge rst_n ) begin
         cnt_clk_200M <= 0;
 end
 
-assign pullup_ahead_cs_n = cnt_clk_200M >= 2? 3: 0; // hold 20ns
+assign pullup_ahead_cs_n = cnt_clk_200M >= 3? 1: 0; // hold 20ns
 // ====================================================================================================================
 // O_spi_data
 
@@ -345,7 +340,7 @@ always @(negedge clk or negedge rst_n) begin : proc_O_spi_mosi
         endcase
         O_spi_data <= 0;
     end else if( state == RD_DATA ) begin
-        O_spi_data  <= blk_mem_dout;
+        O_spi_data  <= I_switch_rdwr? blk_mem_dout : 0;
     end else
         O_spi_data <= 128'dz;
 end
@@ -398,11 +393,8 @@ integer k;
 always @ ( posedge clk or negedge rst_n ) begin
     if ( !rst_n ) begin
         patch_cfg_info_pre_rd[0] <= 7; // sck period = 20; clk_chip =14;
-        patch_cfg_info_pre_rd[1] <= 7;
-        patch_cfg_info_pre_rd[2] <= 6;
-        patch_cfg_info_pre_rd[3] <= 3;
-        patch_cfg_info_pre_rd[4] <= 3;
-        for(k=5; k<100; k=k+1)
+        patch_cfg_info_pre_rd[1] <= 6;
+        for(k=2; k<100; k=k+1)
             patch_cfg_info_pre_rd[k] <= 3;
 
     end 
@@ -510,15 +502,7 @@ always @ ( posedge clk or negedge btn_reset_n ) begin
     end
 end
 
-reg [20      -1 : 0] total_block;
 
-always @ ( posedge clk or negedge btn_reset_n ) begin
-    if ( !btn_reset_n ) begin
-        total_block <= 0;
-    end else if ( state == CONFIG ) begin
-        total_block <= total_block + 1;
-    end
-end
 
 //==============================================================================
 // FPGA ILA :
@@ -539,26 +523,16 @@ end
     .IB (I_clk_src_n), // 差分时钟负端输入
     .O (clk_ibufg) //时钟缓冲输出
     );
-    wire clk_10M;
+
     clk_wiz clk_wiz
     (
     // Clock out ports
-    .clk_out1(clk_10M), // output clk_out1&nbsp;&nbsp;5MHZ&nbsp;&nbsp;
+    .clk_out1(clk), // output clk_out1&nbsp;&nbsp;5MHZ&nbsp;&nbsp;
     .clk_out2(clk_200M),
     // Status and control signals
     .locked(O_FPGA_clk_locked), // output locked
     // Clock in ports
     .clk_in1(clk_ibufg));
-
-    divider_even #(
-        .WIDTH_NUM_DIV(10)
-    ) inst_divider_even_1M (
-        .clk     (clk_10M),
-        .rst_n   (!I_SW_S),
-        .num_div (100),
-        .clk_div (clk)
-    );
-
      
     blk_mem_gen_0 blk_mem_128x2_18 (
       .clka(clk),    // input wire clka
@@ -579,7 +553,7 @@ end
         .probe6(patch_flag_pre_rd[9:0]), // input wire [9:0]  probe6 
         .probe7({patch_cfg_info_rd[0 +: 4], rd_size[0 +: 10], cfg_info, state }), // input wire [30:0]  probe7
         .probe8({O_clk_in, O_FPGA_clk_locked, I_DLL_lock, O_SW1, O_SW0, btn_reset_n, O_SW_clk, O_reset_n,O_bypass_fifo, O_bypass}), //16
-        .probe9({blk_mem_dout, total_block[0 +: 8]}), // 128
+        .probe9(blk_mem_dout), // 128
         .probe10({blk_mem_addr, blk_mem_en}), // 32
         .probe11({cnt_block[`IFCODE_WEIADDR]})// 16
     );
@@ -591,7 +565,7 @@ end
 
     ROM #(
             .DATA_WIDTH(128),
-            .INIT("/workspace/home/zhoucc/Share/Chip_test/Whole_test/scripts/test_data_set/1249_74x72/ROM_data/ROM_distribution_modify.txt"),
+            .INIT("/workspace/home/zhoucc/Share/Chip_test/Whole_test/scripts/ROM_distribution_modify.txt"),
             .ADDR_WIDTH(16),
             .INITIALIZE_FIFO("yes")
         ) inst_ROM (

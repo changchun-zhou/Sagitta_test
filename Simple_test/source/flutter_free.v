@@ -30,11 +30,9 @@ module flutter_free #(
 );
 
 // parameter T_20MS = 2000000; // 100MHz
-`ifdef FPGA
-        parameter T_20MS = 20000*FREQUENCY; 
-`else
-        parameter T_20MS = 20*FREQUENCY; 
-`endif
+
+parameter T_20MS = 20*FREQUENCY;
+
 
 reg [20 : 0]time_cnt;
 

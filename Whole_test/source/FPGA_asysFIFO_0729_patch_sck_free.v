@@ -126,6 +126,8 @@ wire[128    -1 : 0] blk_mem_dout;
 
 reg rst_n_auto;
 wire btn_reset_n;
+wire [8     -1 : 0] gpio_in =  {I_SW7, I_SW6, I_SW5, I_SW4, I_SW3, I_SW2, I_SW1, I_SW0};
+wire [8     -1 : 0] gpio_flutter;
 
 //==============================================================================
 // Logic Design :
@@ -134,11 +136,12 @@ wire btn_reset_n;
 //==============================================================================
 // Ports
 wire [20    -1 : 0] loop_num_block;
-assign loop_num_block = 4*{I_SW7, I_SW6, I_SW5, I_SW4} + 2;
+assign loop_num_block = 4*gpio_flutter[ 4 +: 4] + 2;
 
-wire [3 -1 : 0]state_rst;
-reg [3 -1 : 0]next_state_rst;
-localparam IDLE_RST = 0, PULLDOWN_SW = 1, PULLDOWN_RST_N = 2, PULLUP_RST_N = 3, PULLUP_SW = 4, WAIT0 = 5, WAIT1 =6, WAIT2=7;  
+wire [4 -1 : 0]state_rst;
+reg [4 -1 : 0]next_state_rst;
+localparam IDLE_RST = 0, PULLDOWN_SW = 1, PULLDOWN_RST_N = 2, PULLUP_RST_N = 3, PULLUP_SW = 4, WAIT0 = 5, WAIT1 =6, WAIT2=7,  
+            WAIT3=8,  WAIT4=9, WAIT5=10;
 always @(*) begin
     next_state_rst = state_rst;
     case (state_rst)
@@ -147,10 +150,13 @@ always @(*) begin
 
       PULLDOWN_SW  : next_state_rst = WAIT0;
       WAIT0        : next_state_rst = WAIT1;
-      WAIT1        : next_state_rst = PULLDOWN_RST_N;
+      WAIT1        : next_state_rst = WAIT2;
+      WAIT2        : next_state_rst = WAIT3;
+      WAIT3        : next_state_rst = PULLDOWN_RST_N;
 
-      PULLDOWN_RST_N    : next_state_rst =WAIT2;
-      WAIT2         : next_state_rst = PULLUP_RST_N;
+      PULLDOWN_RST_N    : next_state_rst =WAIT4;
+      WAIT4        : next_state_rst = WAIT5;
+      WAIT5         : next_state_rst = PULLUP_RST_N;
 
       PULLUP_RST_N : next_state_rst = PULLUP_SW;
     PULLUP_SW : if ( cnt_block[`IFCODE_WEIADDR] >= loop_num_block)
@@ -211,6 +217,21 @@ wire    clk_src;
             .btn    (I_SW_C),
             .signal (trigger_O_reset)
         );
+
+generate
+    genvar gen_i;
+    for(gen_i=0; gen_i<8; gen_i=gen_i+1) begin
+        flutter_free #(
+            .FREQUENCY(`FREQUENCY))
+        flutter_free_GPIO (
+                .clk    (clk_src),
+                .rst_n  (!I_SW_S),
+                .btn    (gpio_in[gen_i]),
+                .signal (gpio_flutter[gen_i])
+            );
+    end
+endgenerate
+
 `ifdef FPGA
     wire                                    clk_200M;
 `else
@@ -226,7 +247,7 @@ divider_even #(
     ) inst_divider_even (
         .clk     (clk_src),
         .rst_n   (btn_reset_n),
-        .num_div (3*{I_SW3, I_SW2, I_SW1, I_SW0} + 4), // fre: 
+        .num_div (3*gpio_flutter[0 +: 4] + 4), // fre: 
         .clk_div (clk)
     );
 
@@ -558,7 +579,7 @@ end
 
     ROM #(
             .DATA_WIDTH(128),
-            .INIT("/workspace/home/zhoucc/Share/Chip_test/Whole_test/scripts/ROM_distribution_modify_1bitx2.txt"),
+            .INIT("/workspace/home/zhoucc/Share/Chip_test/Whole_test/scripts/ROM_distribution_modify.txt"),
             .ADDR_WIDTH(16),
             .INITIALIZE_FIFO("yes")
         ) inst_ROM (
@@ -622,7 +643,7 @@ Delay #(
 
 Delay #(
         .NUM_STAGES(1),
-        .DATA_WIDTH(3)
+        .DATA_WIDTH(4)
     ) inst_Delay_state_rst (
         .CLK     (clk),
         .RESET_N (btn_reset_n),

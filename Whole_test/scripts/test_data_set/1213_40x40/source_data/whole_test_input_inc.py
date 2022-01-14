@@ -46,9 +46,9 @@ def tensor_to_file_act(extract_dir, dequant_dir, name,tensor, type, mode,scale, 
     temp_flag = ''
     fp_data_wr = open(os.path.join(dequant_dir)+'/'+'dataact_L00'+'.txt','w') # activation for delta
     fp_flag_wr = open(os.path.join(dequant_dir)+'/'+'flagact_L00'+'.txt','w') 
-    Num_patch =  (math.ceil(shape[0]/16.0))* (math.ceil(shape[1]/16.0))
+    Num_patch =  (math.ceil(shape[3]/16.0))* (math.ceil(shape[4]/16.0))
     Num_frame = shape[2]
-    Num_block = math.ceil(shape[3]/32)
+    Num_block = math.ceil(shape[1]/32)
     for patch in range(Num_patch):
         for frame in range(Num_frame):
         # for frame in range(7):
@@ -56,7 +56,7 @@ def tensor_to_file_act(extract_dir, dequant_dir, name,tensor, type, mode,scale, 
                 for H in range(16):
                     for W in range(16):
                         for chn in range(32):
-                            tmp = round(random.gauss(0.108, 0.430)) # pool1
+                            tmp = abs( round(random.gauss(0, 0.95)) ) # pool1
                             if abs(tmp) >= theshold :
                                 cnt_element += 1
                                 flag = 1
@@ -66,8 +66,12 @@ def tensor_to_file_act(extract_dir, dequant_dir, name,tensor, type, mode,scale, 
                             cnt_wr_flag, temp_flag = WRITE_BACK(fp_flag_wr, 128,1, flag, cnt_wr_flag, temp_flag)
                             cnt_element_flag += 1
     print("Activation Sparsity", 1 - float(cnt_element)/(Num_patch*Num_frame*Num_block*16*16*32))
-    print('Allocated SRAM block of Activation Flag:', math.ceil(Num_patch*Num_frame*Num_block*16*16*32/(128*512)),'rest:',Num_patch*Num_frame*Num_block*16*16*32%(128*512))
-    print('Allocated SRAM block of Activation:', math.ceil(cnt_element/(16*512)),'rest:',cnt_element%(16*512))
+    print("config CFGCCU_num_patch = ", Num_patch -1)
+    print("config CFGCCU_num_frame = ", Num_frame -1)
+    print("config CFGCCU_num_block = ", Num_block -1)
+    print('config CFGGB_num_alloc/total_flgact = ', math.ceil(Num_patch*Num_frame*Num_block*16*16*32/(128*512)),'rest:',Num_patch*Num_frame*Num_block*16*16*32%(128*512))
+    print('config CFGGB_num_alloc/total_act    = ', math.ceil(cnt_element/(16*512)),'rest:',cnt_element%(16*512))
+    print('config CFGGB_num_loop_wei = ', Num_frame)
     for zero_pad in range( (16*512) - cnt_element%(16*512) ):
         tmp = 0
         cnt_wr_data, temp_data= WRITE_BACK(fp_data_wr, 32, 2, tmp, cnt_wr_data, temp_data)
@@ -98,20 +102,20 @@ def tensor_to_file_wei(extract_dir,dequant_dir,name,tensor, type, mode,scale, th
         fp_data_wr = open(os.path.join(dequant_dir)+'/'+'datawei_L00'+'.txt','w') # activation for delta
         fp_flag_wr = open(os.path.join(dequant_dir)+'/'+'flagwei_L00'+'.txt','w')
         fp_addrwei_wr = open(os.path.join(dequant_dir)+'/'+'addrwei_L00'+'.txt','w')
-        for patch in range(int(shape[4]/16)): # ftrgrp
+        for patch in range(int(shape[0]/16.0)): # ftrgrp
             addr_element =0
             # cnt_wr_addrwei, temp_addrwei= WRITE_BACK(fp_addrwei_wr, 32, 4, addr_element, cnt_wr_addrwei, temp_addrwei)
             for weight in range(16): # [73, 67, 17, 4, 83, 25, 52, 126, 37, 41, 68, 127, 123, 49, 49, 36, 120, 13, 44, 90, 30, 42, 42, 42, 63, 5, 5, 28, 28, 21, 21, 114, 54, 54, 75, 23, 19, 16, 110, 87, 91, 12, 70, 53, 58, 69, 31, 31, 31, 8, 38, 34, 85, 92, 105, 100, 32, 39, 39, 39, 80, 20, 111, 97, 15, 35, 64, 27, 46, 26, 26, 2, 14, 43, 43, 71, 0, 3, 3, 57, 33, 106, 106, 24, 81, 82, 78, 47, 59, 103, 65, 65, 10, 10, 10, 74, 56, 56, 56, 60, 122, 101, 1, 94, 6, 66, 93, 9, 48, 29, 7, 22, 115, 112, 109, 108, 96, 40, 119, 51, 124, 62, 55, 11, 11, 18, 77, 61]
                 for frame in range(shape[2]):
                 # for block in range(int(shape[1]/32)):
-                    for H in range(shape[0]):
-                        for W in range(shape[1]):
+                    for H in range(shape[3]):
+                        for W in range(shape[4]):
                             cnt_wr_addrwei, temp_addrwei= WRITE_BACK(fp_addrwei_wr, 32, 4, int(addr_element/16), cnt_wr_addrwei, temp_addrwei)
-                            for chn in range(shape[3]):
+                            for chn in range(shape[1]):
                                 # Sort_index = weight + 16*patch
                                 # Sort_index = CntWeiNotZero_FtrGrp_Sort_index[weight + 16*patch]
-                                tmp = round(random.normalvariate(-0.137, 0.430)) # conv2
-                                if abs(tmp) >= theshold :
+                                tmp = abs( round(random.normalvariate(-0.137, 0.95)) )# conv2
+                                if tmp != 0 :
                                     cnt_element += 1
                                     cnt_sparsity += 1
                                     addr_element += 1
@@ -126,8 +130,6 @@ def tensor_to_file_wei(extract_dir,dequant_dir,name,tensor, type, mode,scale, th
                     cnt_wr_flag, temp_flag = WRITE_BACK(fp_flag_wr, 128,1, flag, cnt_wr_flag, temp_flag)
                     cnt_element_flag += 1
 
-            
-            
             for zero_pad in range( (16*512) - cnt_element%(16*512) ):
                 tmp = 0
                 cnt_wr_data, temp_data= WRITE_BACK(fp_data_wr, 32, 2, tmp, cnt_wr_data, temp_data)
@@ -136,27 +138,21 @@ def tensor_to_file_wei(extract_dir,dequant_dir,name,tensor, type, mode,scale, th
                 flag = 0
                 cnt_wr_flag, temp_flag = WRITE_BACK(fp_flag_wr, 128,1, flag, cnt_wr_flag, temp_flag)
             cnt_element_flag += (128*512) - cnt_element_flag%(128*512)
-        print('Allocated SRAM block of Weight Flag:', math.ceil(shape[4]*shape[3]*shape[2]*shape[1]*shape[0]/(128*512)),'rest:',shape[4]*shape[3]*shape[2]*shape[1]*shape[0]%(128*512))
-        print('Allocated SRAM block of Weight:', math.ceil(cnt_element/(16*512)),'rest:',cnt_element%(16*512))
         print("Weight Sparsity", 1 - float(cnt_sparsity)/(shape[4]*shape[3]*shape[2]*shape[1]*shape[0]))
-        # return
-        # return np.array(array_origin)
-        # if mode == 'dequant':
-        #     print('sparsity:',(1-float(cnt_sparsity)/float(shape[0]*shape[1]*shape[2]*shape[3]*shape[4]))*100)
-        #     print('sparsity_delta_all:',(1-float(cnt_sparsity_delta_all)/float(shape[0]*shape[1]*shape[2]*shape[3]*shape[4]))*100)
-        #     print('sparsity_delta:',(1-float(cnt_sparsity_delta)/float(shape[0]*shape[1]*shape[2]*shape[3]*shape[4]))*100)
-        #     # only delta frame has theshold
-        #     print('sparsity_delta_th:',(1-float(cnt_sparsity_delta_th)/float(shape[0]*shape[1]*shape[2]*shape[3]*shape[4]))*100)
-        #     return
+        print("NumBlk_weiaddr = ", int(shape[0]/16.0))
+        print("config CFGCCU_num_ftrgrp = ", int(shape[0]/16.0) -1)
+        print('config CFGGB_num_alloc/total_flgwei = ', math.ceil(shape[4]*shape[3]*shape[2]*shape[1]*shape[0]/(128*512)),'rest:',shape[4]*shape[3]*shape[2]*shape[1]*shape[0]%(128*512))
+        print('config CFGGB_num_alloc/total_wei = ', math.ceil(cnt_element/(16*512)),'rest:',cnt_element%(16*512))
+        print('config CFGGB_num_loop_act = ', int(shape[0]/16.0))
 
 random.seed(000)
 net = 'conv2'
-tensor = torch.ones([8,  64, 16,  56,  56])
+tensor = torch.ones([8,  32, 4,  14,  14])
 scale = 1
-tensor_to_file_act(extract_dir='', dequant_dir='./test_input_data', \
+tensor_to_file_act(extract_dir='', dequant_dir='./gen_input_data_middle', \
         name='Activation_'+str(0)+'_'+net,tensor=tensor,type='act',mode='dequant', scale=scale, theshold=1) # >= theshold
 
-tensor = torch.ones([128, 64, 3, 3, 3 ])
-tensor_to_file_wei(extract_dir='', dequant_dir='./test_input_data',\
+tensor = torch.ones([16, 32, 3, 3, 3 ])
+tensor_to_file_wei(extract_dir='', dequant_dir='./gen_input_data_middle',\
         name='Weight_'+str(0)+'_'+net,tensor=tensor,type='wei',mode='dequant', scale=scale, theshold=1)
 
