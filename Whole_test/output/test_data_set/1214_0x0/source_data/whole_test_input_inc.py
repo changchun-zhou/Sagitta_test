@@ -4,7 +4,7 @@ data 1111111
 '''
 
 
-import torch 
+# import torch 
 import numpy as np 
 import os
 import random
@@ -33,7 +33,7 @@ def WRITE_BACK( File, NumCol, NumChar, data, cnt_wr, temp ):
 def tensor_to_file_act(extract_dir, dequant_dir, name,tensor, type, mode,scale, theshold):
 
     print("activation theshold:", name, theshold)
-    array_shape = (tensor.cpu()).numpy()
+    array_shape = tensor
     shape = array_shape.shape
     str_row = ''
     cnt_col = 0
@@ -46,9 +46,11 @@ def tensor_to_file_act(extract_dir, dequant_dir, name,tensor, type, mode,scale, 
     temp_flag = ''
     fp_data_wr = open(os.path.join(dequant_dir)+'/'+'dataact_L00'+'.txt','w') # activation for delta
     fp_flag_wr = open(os.path.join(dequant_dir)+'/'+'flagact_L00'+'.txt','w') 
-    Num_patch =  (math.ceil(shape[3]/16.0))* (math.ceil(shape[4]/16.0))
+    # Num_patch =  int((math.ceil(shape[3]/16))* (math.ceil(shape[4]/16)))
+    Num_patch =  1
     Num_frame = shape[2]
-    Num_block = math.ceil(shape[1]/32)
+    Num_block = int(math.ceil(shape[1]/32))
+    print(Num_patch, Num_frame,Num_block)
     for patch in range(Num_patch):
         for frame in range(Num_frame):
         # for frame in range(7):
@@ -81,7 +83,7 @@ def tensor_to_file_act(extract_dir, dequant_dir, name,tensor, type, mode,scale, 
 
 def tensor_to_file_wei(extract_dir,dequant_dir,name,tensor, type, mode,scale, theshold):
 
-        array_shape = (tensor.cpu()).numpy()
+        array_shape = tensor
         shape = array_shape.shape
         str_row = ''
         cnt_col = 0
@@ -147,12 +149,12 @@ def tensor_to_file_wei(extract_dir,dequant_dir,name,tensor, type, mode,scale, th
 
 random.seed(000)
 net = 'conv2'
-tensor = torch.ones([8,  32, 4,  14,  14])
+tensor = np.ones([8,  32, 4,  14,  14])
 scale = 1
-tensor_to_file_act(extract_dir='', dequant_dir='./gen_input_data_middle', \
+tensor_to_file_act(extract_dir='', dequant_dir='./', \
         name='Activation_'+str(0)+'_'+net,tensor=tensor,type='act',mode='dequant', scale=scale, theshold=1) # >= theshold
 
-tensor = torch.ones([16, 32, 3, 3, 3 ])
-tensor_to_file_wei(extract_dir='', dequant_dir='./gen_input_data_middle',\
+tensor = np.ones([16, 32, 3, 3, 3 ])
+tensor_to_file_wei(extract_dir='', dequant_dir='./',\
         name='Weight_'+str(0)+'_'+net,tensor=tensor,type='wei',mode='dequant', scale=scale, theshold=1)
 

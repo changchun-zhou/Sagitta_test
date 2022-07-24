@@ -1,7 +1,18 @@
+
+
 `timescale 1ns/1ps
 `ifndef SIM 
     `define FPGA
 `endif
+// user configurations
+`define NumBlk_weiaddr  1
+`define NumBlk_flgwei   1
+`define NumBlk_wei      3
+`define NumBlk_flgact   1
+`define NumBlk_act      6
+`define INIT_BRAM           "/workspace/home/zhoucc/Share/Chip_test/Whole_test/output/test_data_set/21316_33x33/ROM_data/ROM_distribution_modify.txt"
+
+
 
 `define RD_SIZE_CFG 64 //12B x 256 all layers of NNs
 `define RD_SIZE_WEIADDR 54 //12B x 256 all layers of NNs
@@ -22,12 +33,6 @@
 `define IFCODE_FLGOFM 1
 `define IFCODE_OFM 2
 `define IFCODE_EMPTY 15
-
-`define NumBlk_weiaddr  2
-`define NumBlk_flgwei   1
-`define NumBlk_wei      2
-`define NumBlk_flgact   4
-`define NumBlk_act      9
 
 `define BASEADDR_CFG        32'h0000_0000
 `define BASEADDR_WEIADDR    `BASEADDR_CFG + 64 
@@ -591,7 +596,7 @@ end
 
     ROM #(
             .DATA_WIDTH(128),
-            .INIT("/workspace/home/zhoucc/Share/Chip_test/Whole_test/scripts/test_data_set/1249_74x72/ROM_data/ROM_distribution_modify.txt"),
+            .INIT(`INIT_BRAM),
             .ADDR_WIDTH(16),
             .INITIALIZE_FIFO("yes")
         ) inst_ROM (

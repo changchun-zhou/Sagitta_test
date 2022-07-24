@@ -586,7 +586,6 @@ assign Summary_MAC =
                         +   Summary_MAC_work_wait_wei / ( 60 + Summary_TS3D_MAC_compute*10/Summary_TS3D_MAC_compute_sta )*10
                         +   Summary_MAC_work_wait_flgwei / ( 20 + Summary_TS3D_MAC_compute*10/Summary_TS3D_MAC_compute_sta )*10;
 
-assign Summary_MAC_FFZS = ;
 
 
 

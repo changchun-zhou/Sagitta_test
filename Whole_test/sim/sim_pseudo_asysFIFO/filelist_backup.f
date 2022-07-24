@@ -1,6 +1,5 @@
 /workspace/home/zhoucc/Share/Chip_test/Whole_test/testbench/tb_Sagitta.v 
-/workspace/home/zhoucc/Share/Chip_test/Whole_test/testbench/SUM.v 
-/workspace/home/zhoucc/Share/Chip_test/Whole_test/source/FPGA_asysFIFO_FPGA_0722_distribution_modify_state_rst_addr16.v 
+/workspace/home/zhoucc/Share/Chip_test/Whole_test/source/FPGA.v 
 /workspace/home/zhoucc/Share/Chip_test/Whole_test/source/ROM.v 
 /workspace/home/zhoucc/Share/Chip_test/Whole_test/source/divider_even.v 
 /workspace/home/zhoucc/Share/Chip_test/Simple_test/source/flutter_free.v 
@@ -68,3 +67,5 @@
 /workspace/home/zhoucc/01-Backup/TS3D_tapeout/qiusy/mem/SYLA55_256X32X4CM2/SYLA55_256X32X4CM2.v 
 /workspace/home/zhoucc/01-Backup/TS3D_tapeout/qiusy/mem/SYLA55_64X32X4CM2/SYLA55_64X32X4CM2.v 
 /workspace/home/zhoucc/01-Backup/TS3D_tapeout/qiusy/mem/SYLA55_256X8X1CM4/SYLA55_256X8X1CM4.v 
+/workspace/home/zhoucc/Share/Chip_test/Whole_test/testbench/SUM.v 
+/workspace/home/zhoucc/Share/Chip_test/Whole_test/testbench/Assert.v

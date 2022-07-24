@@ -148,11 +148,12 @@ assign flagcompwei_currow = flagcompwei_row[`MAC_NUM*arbrow +: `MAC_NUM];
 
 assign arb_en     = Help && state == ARB;
 assign ARBPEB_Fnh = state == IDLE; //
-assign Help       = (|MAC_ReqHelp) && (|WEI_ReqHelped);
+// assign Help       = (|MAC_ReqHelp) && (|WEI_ReqHelped);
+assign Help       = |(MAC_ReqHelp & WEI_ReqHelped);
 
 
 ARRAY2ID ARRAY2ID_IDMAC_Help ( // Help other
-    .Array(MAC_ReqHelp),
+    .Array(MAC_ReqHelp & WEI_ReqHelped),
     .ID(IDMAC_Help),
     .Array_One(MAC_Help_One)
     );

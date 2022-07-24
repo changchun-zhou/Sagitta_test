@@ -201,6 +201,7 @@ module tb_FPGA (); /* this is automatically generated */
     ASIC_U,, "sdf.log", "MAXIMUM","1.0:1.0:1.0","FROM_MAXIMUM");
     `else
         SUM inst_SUM (.clk(clk_core), .rst_n(O_reset_n));
+        Assert inst_Assert (.clk(clk_core), .rst_n(O_reset_n));
     `endif
     
 

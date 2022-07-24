@@ -1,5 +1,5 @@
 
-NumBlk_weiaddr = 2
+NumBlk_weiaddr = 1
 NumBlk_flgwei  = 1
 NumBlk_wei     = 2
 NumBlk_flgact  = 1
