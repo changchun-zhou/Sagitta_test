@@ -1,0 +1,10 @@
+**/.svn
+**/INCA_libs
+**/log
+**/.shm
+**/.simvision
+
+*.svwf
+*.diag
+*~
+*.key
