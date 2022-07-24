@@ -1,0 +1,60 @@
+################################################################
+# The script for mini-mips power analysis
+################################################################
+
+###### global settings ######
+set TOP_DES_NAME ASIC_tb
+set DESIGN ASIC
+set clk clk
+
+set rst reset
+
+
+# set libpath { \
+# 	/workspace/technology/umc/55nm/SC/fuctional_lib/G-9LT-LOGIC_MIXED_MODE55N-LP_LOW_K_UM055LSCLPMVBDR-LIBRARY_TAPE_OUT_KIT-Ver.B01_P.B/synopsys/ \
+# 	}
+
+#set_attribute hdl_language       vhdl
+set_attr hdl_search_path ./p+r_enc
+set_attribute script_search_path ./script
+#set verbosity level (0-9):
+set_attribute information_level  9
+
+###### Libraries and technology files ######
+
+source ./script/tech_settings.tcl
+#read_cpf -library ./behaviour.cpf
+
+
+###### Read HDL files ######
+
+#include ./script/read_hdl.scr
+
+#foreach VERILOG_FILE ${VERILOG_FILES} {
+#  read_hdl ${VERILOG_FILE}.v
+#}
+read_hdl /workspace/home/zhoucc/Share/TS3D/TS3D_svn_co/zhoucc_svn_co/AC_modify/modify_0820/top_RSB.v
+
+###### Elaborate design ######
+
+elaborate $DESIGN
+
+# set_attribute wireload_mode enclosed
+set_attribute interconnect_mode ple
+
+# read tcf file for power estimation:
+
+read_tcf -tcf_instance ASIC /workspace/home/zhoucc/Share/Chip_test/Whole_test/sim/sim_gds_fast_signoff/tcf_ASIC.dump
+
+# write reports:
+
+report gates        > ./report/${TOP_DES_NAME}_tcf.gates
+report power        > ./report/${TOP_DES_NAME}_tcf.power
+report summary      > ./report/${TOP_DES_NAME}_tcf.summary
+
+
+puts "The RUNTIME is [get_attr runtime /] seconds"
+
+exit
+
+

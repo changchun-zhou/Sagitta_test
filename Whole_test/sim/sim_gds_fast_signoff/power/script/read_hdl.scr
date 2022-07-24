@@ -1,0 +1,58 @@
+# File: read_hdl.scr
+
+# define design files:
+set VERILOG_FILES { \
+/workspace/home/zhoucc/Share/TS3D_opt/zhoucc/source/PEB/ACT.v \
+/workspace/home/zhoucc/Share/TS3D_opt/zhoucc/source/PEB/REGFLGWEI.v \
+/workspace/home/zhoucc/Share/TS3D_opt/zhoucc/source/PEB/REGWEI.v \
+/workspace/home/zhoucc/Share/TS3D_opt/zhoucc/source/PEB/ARB.v \
+/workspace/home/zhoucc/Share/TS3D_opt/zhoucc/source/PEB/MAC.v \
+/workspace/home/zhoucc/Share/TS3D_opt/zhoucc/source/PEB/MACAW.v \
+/workspace/home/zhoucc/Share/TS3D_opt/zhoucc/source/PEB/PEB.v \
+/workspace/home/zhoucc/Share/TS3D_opt/zhoucc/source/PEB/PSUM.v \
+/workspace/home/zhoucc/Share/TS3D_opt/zhoucc/source/PEB/RAM_ACT_wrap.v \
+/workspace/home/zhoucc/Share/TS3D_opt/zhoucc/source/PEB/SRAM_ACT.v \
+/workspace/home/zhoucc/Share/TS3D_opt/zhoucc/source/PEB/SRAM_WEI.v \
+/workspace/home/zhoucc/Share/TS3D_opt/zhoucc/source/PEB/FLGOFFSET.v \
+/workspace/home/zhoucc/Share/TS3D_opt/zhoucc/source/primitives/DELAY/Delay.v \
+/workspace/home/zhoucc/Share/TS3D_opt/zhoucc/source/primitives/FIFO/fifo.v \
+/workspace/home/zhoucc/Share/TS3D_opt/zhoucc/source/primitives/FIFO/fifo_fwft.v \
+/workspace/home/zhoucc/Share/TS3D_opt/zhoucc/source/primitives/COUNTER/counter.v \
+/workspace/home/zhoucc/Share/TS3D_opt/zhoucc/source/primitives/RAM_SIM/RAM_FRMPOOL_wrap.v \
+/workspace/home/zhoucc/Share/TS3D_opt/zhoucc/source/primitives/PACKER/data_packer_right.v \
+/workspace/home/zhoucc/Share/TS3D_opt/zhoucc/source/primitives/PISO/piso_norm.v \
+/workspace/home/zhoucc/Share/TS3D_opt/zhoucc/source/PEB/fifo_mr_sram_act.v \
+/workspace/home/zhoucc/Share/TS3D_opt/zhoucc/source/PEB/fifo_mr_sram_wei.v \
+/workspace/home/zhoucc/Share/TS3D_opt/zhoucc/source/CCU/CCU.v \
+/workspace/home/zhoucc/Share/TS3D_opt/zhoucc/source/IF/IF.v \
+/workspace/home/zhoucc/Share/TS3D_opt/zhoucc/source/IF/top_asyncFIFO_rd.v \
+/workspace/home/zhoucc/Share/TS3D_opt/zhoucc/source/IF/top_asyncFIFO_wr.v \
+/workspace/home/zhoucc/Share/TS3D_opt/zhoucc/source/IF/fifo_async_rd.v \
+/workspace/home/zhoucc/Share/TS3D_opt/zhoucc/source/IF/fifo_async_wr.v \
+/workspace/home/zhoucc/Share/TS3D_opt/zhoucc/source/PEL/PEL.v \
+/workspace/home/zhoucc/Share/TS3D_opt/zhoucc/source/POOL/POOL.v \
+/workspace/home/zhoucc/Share/TS3D_opt/zhoucc/source/TS3D/TS3D.v \
+/workspace/home/zhoucc/Share/TS3D_opt/liumin/GB_src/ARB_2.v \
+/workspace/home/zhoucc/Share/TS3D_opt/liumin/GB_src/GB.v \
+/workspace/home/zhoucc/Share/TS3D_opt/liumin/GB_src/SRAM_Wr_ID.v \
+/workspace/home/zhoucc/Share/TS3D_opt/liumin/GB_src/Arbitrater.v \
+/workspace/home/zhoucc/Share/TS3D_opt/liumin/GB_src/RD_Ctrl_s.v \
+/workspace/home/zhoucc/Share/TS3D_opt/liumin/GB_src/SRAM_CTRL.v \
+/workspace/home/zhoucc/Share/TS3D_opt/liumin/GB_src/Wei_Address.v \
+/workspace/home/zhoucc/Share/TS3D_opt/liumin/GB_src/Cor2Abs_ID.v \
+/workspace/home/zhoucc/Share/TS3D_opt/liumin/GB_src/RD_Ctrl.v \
+/workspace/home/zhoucc/Share/TS3D_opt/liumin/GB_src/SRAM_Rd_ID.v \
+/workspace/home/zhoucc/Share/TS3D_opt/liumin/GB_src/WR_Ctrl.v \
+/workspace/home/zhoucc/Share/TS3D_opt/liumin/GB_src/RD_Ctrl_Wei.v \
+/workspace/home/zhoucc/Share/TS3D_opt/liumin/GB_src/WR_Next_ID.v \
+/workspace/home/zhoucc/Share/TS3D_opt/liumin/GB_src/WeiFlg_Abs.v \
+/workspace/home/zhoucc/Share/TS3D_opt/liumin/GB_src/SRAM_Block.v \
+/workspace/home/zhoucc/Share/TS3D_opt/liumin/GB_src/ARB_WR2SRAM.v \
+/workspace/home/zhoucc/Share/TS3D_opt/liumin/GB_src/ARB_PE2Wei.v \
+/workspace/home/zhoucc/Share/TS3D_opt/qiusy/POOL_OUT/POOL_OUT.v \
+/workspace/home/zhoucc/Share/TS3D_opt/qiusy/GB_PSUM/RAM_DELTA_wrap.v \
+/workspace/home/zhoucc/Share/TS3D_opt/qiusy/GB_PSUM/GB_PSUM.v \
+/workspace/home/zhoucc/Share/TS3D_opt/qiusy/GB_PSUM/GB_PSUM_BANK.v \
+/workspace/home/zhoucc/Share/TS3D_opt/zhoucc/source/ASIC/ASIC.v \
+}
+

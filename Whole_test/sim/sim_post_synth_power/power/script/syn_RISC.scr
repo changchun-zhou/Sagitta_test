@@ -1,0 +1,228 @@
+####### Synth scrpit for TS3D             #########
+####### Modified by Changchun Zhou   ########
+
+###### global settings ######
+# puts "TIMESTAMP:[clock format [clock second ] -format %T]: [expr [mem] /1024]M \
+    # Begin : Setup rc options & variables"
+source -verbose ./config_temp.tcl
+
+set DESIGN $DESIGN_NAME
+#from .csh
+set TOP_MODULE ${DESIGN}
+# set CLK_FREQ 5000
+
+set clk clk
+# set sck O_spi_sck_rd0_pad
+
+# set rst reset_n_pad
+# set rst_dll reset_dll_pad
+# set S0_dll S0_dll_pad
+
+###### Read HDL files ######
+include ../../script/read_hdl.scr
+foreach VERILOG_FILE ${VERILOG_FILES} {
+  read_hdl -sv ${VERILOG_FILE}
+}
+  #read_hdl -v2001 ${VERILOG_FILE}
+###### Libraries and technology files ######
+# source ./script/hdl_path.tcl
+#set_attr hdl_language       sv
+set_attribute hdl_search_path "./"
+set_attribute script_search_path ./script
+set_attribute information_level  9
+source ../../script/${TECH_SETTING}
+set_attribute lef_library  ${tech_lef}
+
+
+set_attribute hdl_track_filename_row_col true /
+
+###### Setup for timing optimization #####
+# set_attribute max_cpus_per_server 64
+# set_attribute super_thread_servers {localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost localhost} /
+set_attribute tns_opto true /
+
+###### Elaborate design ######
+
+set_attribute hdl_vhdl_assign_width_mismatch true
+set_attribute hdl_vhdl_lrm_compliance true
+
+#set_attribute hdl_undriven_signal_value 0
+#set_attribute hdl_undriven_output_port_value 0
+#set_attribute hdl_unconnected_input_port_value 0
+set_attribute auto_ungroup $UNGROUP
+
+
+# suspend
+elaborate $DESIGN
+
+# set_attribute lp_power_unit mW
+# set_attribute leakage_power_effort high
+# # not used
+# set_attribute max_leakage_power 0 [find / -design $DESIGN] 
+
+# set_attribute max_dynamic_power 300 [find / -design $DESIGN]
+set_attribute lp_power_optimization_weight 0.05 [find / -design $DESIGN]
+
+# set_attribute hdl_preserve_unused_registers true /
+
+read_sdc ../../${SDC_FILE}
+
+# # read_sdc ../../module.sdc
+# read_sdc ../../ASIC.sdc
+# set_attribute preserve true [find / -instance *PAD*]
+
+# ###### Setting constraints ######
+# define_clock  -name $clk -period 5000 [find / -port $clk] -domain system
+# define_clock  -name $sck -period 10000 [find / -port $sck] -domain system_sck
+
+
+
+# # suspend
+# set_attribute clock_setup_uncertainty {300 300} $clk
+# set_attribute clock_hold_uncertainty  {300 300} $clk
+# set_attribute clock_setup_uncertainty {400 400} $sck
+# set_attribute clock_hold_uncertainty  {400 400} $sck
+
+# path_disable -from [find  / -port ports_in/$rst]
+# path_disable -from [find  / -port ports_in/$rst_dll]
+# path_disable -from [find  / -port ports_in/$S0_dll]
+
+
+set_attribute avoid true [find / -libcell SDF*]
+
+# ####### Input Delay && Output Delay ################
+# ## ASIC clock
+# external_delay -output 0 -clock [find / -clock $clk] -edge_rise [find / -port IO_spi_data_rd0_pad*]
+# external_delay -output 0 -clock [find / -clock $clk] -edge_rise [find / -port config_req_rd0_pad*]
+
+# ## FPGA sck
+# external_delay -input  0   -clock [find / -clock $sck] -edge_fall [find / -port IO_spi_data_rd0_pad*]
+# external_delay -input  0   -clock [find / -clock $sck] -edge_fall [find / -port O_spi_cs_n_rd0_pad  ]
+# external_delay -input  0   -clock [find / -clock $sck] -edge_rise [find / -port OE_req_rd0_pad      ]
+# external_delay -output 4000   -clock [find / -clock $sck] -edge_rise [find / -port near_full_rd0_pad   ]
+
+# ####### Output Load #########################
+# set_attribute external_pin_cap 1000 [find / -port io_out_* ]
+# set_attribute external_pin_cap 1000 [find / -port config_req_rd0_pad ]
+# set_attribute external_pin_cap 1000 [find / -port near_full_rd0_pad ]
+# set_attribute external_pin_cap 1000 [find / -port Switch_RdWr_pad ]
+
+
+# ####### Input Drivern #########################
+# set_attribute fixed_slew 500 [find / -port $rst]
+# set_attribute fixed_slew 500 [find / -port $rst_dll]
+# set_attribute fixed_slew 500 [find / -port $S0_dll]
+
+# set_attribute fixed_slew 500 [find / -port IO_spi_data_rd0_pad*]
+# set_attribute fixed_slew 500 [find / -port O_spi_cs_n_rd0_pad]
+# set_attribute fixed_slew 500 [find / -port OE_req_rd0_pad]
+
+
+# set_attribute max_fanout 32  [find / -design $DESIGN]
+# set_attribute max_transition 500 [find / -design $DESIGN]
+
+# set_attribute interconnect_mode ple
+
+# set_attribute ideal_driver true  [find / -port $clk]
+# set_attribute ideal_driver true  [find / -port $rst]
+# set_attribute ideal_driver true  [find / -port $rst_dll]
+# set_attribute ideal_driver true  [find / -port $S0_dll]
+
+set_attribute remove_assigns true
+
+# ###### Clock gating constraint ######
+# #set_attribute lp_clock_gating_max_flops 4 /designs/*
+
+
+####check design
+check_design -all > ./rpt/${DESIGN}.design_check_pre_synth.rpt
+report timing -verbose -lint > ./rpt/${DESIGN}.timing_check_pre_synth.rpt
+# suspend
+
+source -verbose ./synthesize.tcl
+# set_attribute preserve true [find /designs/ARB/instances_seq -instance *RowOn*]
+# set_attribute preserve true [find /designs/ARB/instances_seq -instance *ARBMAC_IDWei*]
+# set_attribute preserve true [find /designs/ARB/instances_seq -instance *ARBMAC_IDPSUM*]
+
+# ###### Adding Physical Synthesis Script ######
+# set_attribute qrc_tech_file /workspace/technology/umc/55nm_201908/pdk/FDK/calibre/LPE/QRC/Cmax/qrcTechFile /
+# set_attribute enc_temp_dir rc_enc /
+# report ple
+# read_def /workspace/home/caoxg/PKU_VLSI_202008/ASIC.def
+# ###### Synthesis ######
+# # synthesize -to_generic -effort medium
+# synthesize -to_placed
+# synthesize -to_placed -incremental
+
+
+# # synthesize -to_generic -effort medium
+synthesize -to_mapped -eff high -incremental
+
+
+###### define cost group ######
+#input to register
+# define_cost_group -name I2C_clk -design $DESIGN
+# path_group -from [all_inputs] -to $clk -group I2C_clk
+# report timing -encounter -full_pin_names -num_paths 100 -cost_group I2C_clk  > ./rpt/I2C_clk.rpt
+
+# #register to output
+# define_cost_group -name C2O_clk -design $DESIGN
+# path_group -from  $clk -to [all_outputs] -group C2O_clk
+# report timing -encounter -full_pin_names -num_paths 100 -cost_group C2O_clk  > ./rpt/C2O_clk.rpt
+
+# #register to register
+# define_cost_group -name C2C_clk -design $DESIGN
+# path_group -from  $clk -to  $clk -group C2C_clk
+# report timing -encounter -full_pin_names -num_paths 100 -cost_group C2C_clk  > ./rpt/C2C_clk.rpt
+
+
+
+# ###### define cost group ######
+# define_cost_group -name I2C_sck -design $DESIGN
+# path_group -from [all_inputs] -to $sck -group I2C_sck
+# report timing -encounter -full_pin_names -num_paths 100 -cost_group I2C_sck  > ./rpt/I2C_sck.rpt
+
+
+# #register to output
+# define_cost_group -name C2O_sck -design $DESIGN
+# path_group -from  $sck -to [all_outputs] -group C2O_sck
+# report timing -encounter -full_pin_names -num_paths 100 -cost_group C2O_sck  > ./rpt/C2O_sck.rpt
+
+# #register to register
+# define_cost_group -name C2C_sck -design $DESIGN
+# path_group -from  $sck -to  $sck -group C2C_sck
+
+# report timing -encounter -full_pin_names -num_paths 100 -cost_group C2C_sck  > ./rpt/C2C_sck.rpt
+
+
+###### Write files for Encounter ######
+
+write_encounter design -basename ./p+r_enc/${DESIGN}_synth
+write_sdf -edge check_edge -setuphold split > ./gate/${DESIGN}.sdf
+write -m ${DESIGN} > ./gate/${DESIGN}.v
+
+###### Report power and timing ######
+
+report power        > ./rpt/${DESIGN}.power.rpt
+report area         > ./rpt/${DESIGN}.area.rpt
+report gates        > ./rpt/${DESIGN}.gates.rpt
+report design_rules > ./rpt/${DESIGN}.rules.rpt
+report clock_gating > ./rpt/${DESIGN}.clkgating.rpt
+report summary      > ./rpt/${DESIGN}.summary.rpt
+report timing -num_paths 100     > ./rpt/${DESIGN}.timing.rpt
+#### check design after synth
+check_design -all > ./rpt/${DESIGN}.design_post_synth.rpt
+
+# report timing -from $clk -to $sck > ./rpt/${DESIGN}.timing_clk_to_sck.rpt
+# report timing -from $sck -to $clk > ./rpt/${DESIGN}.timing_sck_to_clk.rpt
+
+report timing -verbose -lint > ./rpt/${DESIGN}.timing_check_post_synth.rpt
+
+
+puts "The RUNTIME is [get_attr runtime /] seconds"
+report area -depth 2       > ./rpt/${DESIGN}.area_depth2.rpt
+report area -depth 3       > ./rpt/${DESIGN}.area_depth3.rpt
+report area -depth 4       > ./rpt/${DESIGN}.area_depth4.rpt
+report area -depth 5       > ./rpt/${DESIGN}.area_depth5.rpt
+report area -depth 6       > ./rpt/${DESIGN}.area_depth6.rpt
+#exit

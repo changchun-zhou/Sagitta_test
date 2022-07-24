@@ -1,0 +1,95 @@
+set DESIGN Global_PE_top
+set clk clk
+set rst_n rst_n
+set libpath { \
+	/workspace/technology/umc/55nm_201908/SC/functional_lib/G-9LT-LOGIC_MIXED_MODE55N-LP_LOW_K_UM055LSCLPMVBDR-LIBRARY_TAPE_OUT_KIT-Ver.B01_P.B/synopsys \
+	}
+
+set_attribute super_thread_cache /workspace/home/liumin/
+set_attribute max_super_thread_cache_size 10000
+set_attribute hdl_language v2001
+set_attribute hdl_search_path ../
+set_attribute script_search_path ./script
+#set verbosity level (0-9):
+set_attribute information_level  9
+#set_attribute auto_super_thread true /
+#set_attribute super_thread_servers {localhost localhost localhost localhost localhost localhost localhost localhost} /
+set_attribute max_cpus_per_server 16 /
+set_attribute super_thread_servers "localhost" /
+###### Libraries and technology files ######
+
+source ./script/tech_settings.tcl
+#read_cpf -library ./behaviour.cpf
+
+###### Enable clock gating ######
+
+set_attribute lp_insert_clock_gating true /
+set_attribute lp_clock_gating_exceptions_aware true /
+set_attribute lp_clock_gating_prefix "PREFIX_lp_clock_gating"  /
+
+###### Enable operand isolation ######
+
+set_attribute lp_insert_operand_isolation true /
+set_attribute lp_operand_isolation_prefix "PREFIX_lp_operand_isolation"  /
+
+###### Read HDL files ######
+
+include ./script/read_hdl.scr
+
+foreach VERILOG_FILE ${VERILOG_FILES} {
+  read_hdl ${VERILOG_FILE}.v
+}
+
+#set_attribute hdl_signal_value 0 /
+#set_attribute hdl_undriven_output_port 0 /
+#set_attribute hdl_unconnected_input_port 0 /
+
+###### Don't touch cells ######
+
+# set_attribute preserve true [find / -subdesign TS1N40LPB8192X32M4S]
+# set_attribute preserve true [find / -subdesign TSDN40LPA128X32M4F]
+set_attribute boundary_optimize_constant_hier_pins false /
+set_attribute boundary_optimize_equal_opposite_hier_pins false /
+set_attribute boundary_optimize_feedthrough_hier_pins false /
+set_attribute boundary_optimize_invert_hier_pins false /
+set_attribute boundary_optimize_invert_hier_pins_rename_nets false /
+
+###### Setup for power analysis #####
+
+set_attribute hdl_track_filename_row_col true /
+
+###### Setup for timing optimization #####
+
+set_attribute tns_opto true /
+
+###### Elaborate design ######
+
+set_attribute hdl_vhdl_assign_width_mismatch true
+set_attribute hdl_vhdl_lrm_compliance true
+# set_attribute wireload_mode enclosed
+set_attribute interconnect_mode ple
+
+elaborate $DESIGN
+
+define_clock -name clk -period 10000 -domain domain1 [find / -port clk]
+#set_attribute slew {50 50 100 100} /designs/${DESIGN}/timing/clock_domains/domain_1/clk
+set_attribute clock_setup_uncertainty {150 150} [find / -clock clk]
+set_attribute clock_hold_uncertainty {150 150} [find / -clock clk]
+
+external_delay -input 200 -clock [find / -clock clk] -edge_rise [all_inputs]
+external_delay -output 200 -clock [find / -clock clk] -edge_rise [all_outputs]
+#set_attribute external_pin_cap 1000 [find /des* -port ports_out/*]
+#set_attribute external_driver [find [find / -libcell DFQM1RA] -libpin Q] [find /des* -port ports_in/*]
+#set_attribute external_pin_cap 2 [find /des* -port ports_out/*]
+set_attribute max_fanout 32 [find / -design Global_PE_top]
+set_attribute max_transition 250 [find / -design Global_PE_top]
+
+set_attribute ideal_driver true  [find / -port $clk]
+set_attribute ideal_driver true  [find / -port $rst_n]
+
+#read_cpf behaviour.cpf
+#commit_cpf
+
+check_design -all > ./rpt/elab.rpt
+check_library > ./rpt/checkLibrary.rpt
+report timing -lint -verbose > ./rpt/lint_elab.rpt

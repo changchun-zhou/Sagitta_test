@@ -1,0 +1,15 @@
+# File: read_hdl.scr
+
+# define design files:
+set VERILOG_FILES { \
+/workspace/home/zhoucc/Share/TS3D/zhoucc/source/ASIC/ASIC.v \
+/workspace/home/zhoucc/Share/TS3D/zhoucc/source/CCU/CCU.v \
+/workspace/home/zhoucc/Share/TS3D/zhoucc/source/IF/IF.v \
+/workspace/home/zhoucc/Share/TS3D/zhoucc/source/IF/top_asyncFIFO_rd.v \
+/workspace/home/zhoucc/Share/TS3D/zhoucc/source/IF/top_asyncFIFO_wr.v \
+/workspace/home/zhoucc/Share/TS3D/zhoucc/source/IF/fifo_async_rd.v \
+/workspace/home/zhoucc/Share/TS3D/zhoucc/source/IF/fifo_async_wr.v \
+
+
+}
+
