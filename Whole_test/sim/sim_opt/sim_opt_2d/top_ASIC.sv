@@ -343,7 +343,7 @@ reg [`TB_PORT_WIDTH - 1 : 0]act_data_mem[0 : ACT_DATA_BLOCK * 512 - 1];
 reg [`TB_PORT_WIDTH - 1 : 0]act_flag_mem[0 : ACT_FLAG_BLOCK * 512 - 1];
 
 initial begin
-    $readmemh("/workspace/home/zhoucc/Share/Chip_test/Whole_test/scripts/test_data_set/1243_92x92/source_data/datawei_L00.txt", wei_data_mem);
+    $readmemh($psprintf("%s/source_data/datawei_L00.txt", `DIRECT);
     $readmemh("/workspace/home/zhoucc/Share/Chip_test/Whole_test/scripts/test_data_set/1243_92x92/source_data/flagwei_L00.txt", wei_flag_mem);
     $readmemh("/workspace/home/zhoucc/Share/Chip_test/Whole_test/scripts/test_data_set/1243_92x92/source_data/addrwei_L00.txt", wei_addr_mem);
     $readmemh("/workspace/home/zhoucc/Share/Chip_test/Whole_test/scripts/test_data_set/1243_92x92/source_data/dataact_L00.txt", act_data_mem);
