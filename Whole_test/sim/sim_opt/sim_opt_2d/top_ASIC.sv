@@ -20,25 +20,20 @@
 `include "/workspace/home/zhoucc/Share/TS3D_opt/zhoucc/source/include/dw_params_presim.vh"
 `timescale 1ns/1ps
 module top;
+    parameter FEATURE_GROUP  = 32'd8;
+    parameter PATCH_NUM      = 32'd16;
+    parameter WEI_DATA_BLOCK = 32'd2 * FEATURE_GROUP;
+    parameter WEI_FLAG_BLOCK = 32'd1 * FEATURE_GROUP;
+    parameter ACT_DATA_BLOCK = 32'd8 * PATCH_NUM;
+    parameter ACT_FLAG_BLOCK = 32'd5 * PATCH_NUM;
 
-    // user configurations
-    parameter MEM_PATH = "/workspace/home/zhoucc/Share/Chip_test/Whole_test/output/c3d/ffzs_conv2_70x56/discrete";
-    parameter CFG_INFO = 128'h00000023802264e110e0100400002012;
-
-
-            // IFGB_rd_data = { 1'd0,
-            //                 6'd10, 8'd1, 11'd1, 6'd3, 10'd1,
-            //                 4'd1, 4'd2,4'd1, 4'd2,
-            //                 4'd1,4'd1, 4'd2,
-            //                 12'd4, 8'd2,
-            //                 { 20'd1, 8'd0, 1'd1, 1'd0, 3'd2 }};
-
-    parameter FEATURE_GROUP  = CFG_INFO[33+8+12+16+16+16    +: 11];
-    parameter PATCH_NUM      = CFG_INFO[33+8+12+16+16+16+11 +: 8];
-    parameter WEI_DATA_BLOCK = CFG_INFO[33+8+12+16+12       +: 4];
-    parameter WEI_FLAG_BLOCK = CFG_INFO[33+8+12+16+8        +: 4];
-    parameter ACT_DATA_BLOCK = CFG_INFO[33+8+12+16          +: 4];
-    parameter ACT_FLAG_BLOCK = CFG_INFO[33+8+12+16+4        +: 4];
+    // basetest
+    // parameter FEATURE_GROUP  = 32'd2;
+    // parameter PATCH_NUM      = 32'd2;
+    // parameter WEI_DATA_BLOCK = 32'd2 * FEATURE_GROUP;
+    // parameter WEI_FLAG_BLOCK = 32'd1 * FEATURE_GROUP;
+    // parameter ACT_DATA_BLOCK = 32'd2 * PATCH_NUM;
+    // parameter ACT_FLAG_BLOCK = 32'd1 * PATCH_NUM;
 
    parameter WEI_ADDR_ADDR_BW = 6 + clogb2(FEATURE_GROUP) - 1;
    parameter WEI_DATA_ADDR_BW = 9 + clogb2(WEI_DATA_BLOCK) - 1;
@@ -64,7 +59,6 @@ module top;
   bit rst_n_dll;
   // System Clock and Reset
   initial begin
-    
     clk <= 'd1;
     #100;
     // @(negedge top.TS3D_U.inst_CCU.Delay_inc_layer_d.DIN);
@@ -349,11 +343,11 @@ reg [`TB_PORT_WIDTH - 1 : 0]act_data_mem[0 : ACT_DATA_BLOCK * 512 - 1];
 reg [`TB_PORT_WIDTH - 1 : 0]act_flag_mem[0 : ACT_FLAG_BLOCK * 512 - 1];
 
 initial begin
-    $readmemh({MEM_PATH, "/datawei_L00.txt"}, wei_data_mem);
-    $readmemh({MEM_PATH, "/flagwei_L00.txt"}, wei_flag_mem);
-    $readmemh({MEM_PATH, "/addrwei_L00.txt"}, wei_addr_mem);
-    $readmemh({MEM_PATH, "/dataact_L00.txt"}, act_data_mem);
-    $readmemh({MEM_PATH, "/flagact_L00.txt"}, act_flag_mem);
+    $readmemh($psprintf("%s/source_data/datawei_L00.txt", `DIRECT);
+    $readmemh("/workspace/home/zhoucc/Share/Chip_test/Whole_test/scripts/test_data_set/1243_92x92/source_data/flagwei_L00.txt", wei_flag_mem);
+    $readmemh("/workspace/home/zhoucc/Share/Chip_test/Whole_test/scripts/test_data_set/1243_92x92/source_data/addrwei_L00.txt", wei_addr_mem);
+    $readmemh("/workspace/home/zhoucc/Share/Chip_test/Whole_test/scripts/test_data_set/1243_92x92/source_data/dataact_L00.txt", act_data_mem);
+    $readmemh("/workspace/home/zhoucc/Share/Chip_test/Whole_test/scripts/test_data_set/1243_92x92/source_data/flagact_L00.txt", act_flag_mem);
 end
 
 reg [WEI_DATA_ADDR_BW - 1 : 0]wei_data_addr;
@@ -426,7 +420,10 @@ always @ (posedge clk or negedge rst_n)begin
         end
     end
 end
-
+reg reg [`TB_PORT_WIDTH - 1 : 0]config_mem[0 : 1 - 1];
+initial begin
+    $readmemh($psprintf("/workspace/home/zhoucc/Share/Chip_test/Whole_test/scripts/test_data_set/ %s/ROM/ROM.txt", `DIRECT), config_mem);
+end
 
 //========================== cfg ==============================
 always @ ( * )begin
@@ -438,7 +435,7 @@ always @ ( * )begin
             //                 4'd1,4'd1, 4'd2,
             //                 12'd4, 8'd2,
             //                 { 20'd1, 8'd0, 1'd1, 1'd0, 3'd2 }};
-            IFGB_rd_data = CFG_INFO;
+            IFGB_rd_data = config_mem[0];
         end else if (GBIF_cfg_info[3 : 1] == 3) begin
             IFGB_rd_data = wei_addr_mem[wei_addr_addr];
         end else if (GBIF_cfg_info[3 : 1] == 4) begin
